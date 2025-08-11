@@ -11,23 +11,17 @@ A Next.js web application for controlling Everlight sequences.
 
 ## Setup
 
-1. Install dependencies:
+1. Build the Docker image:
    ```bash
-   npm install
+   docker-compose build
    ```
 
-2. Configure your environment variables in `.env.local`:
-   ```
-   LIGHT_CONTROLLER_IP=192.168.1.47
-   ZONE_ID=a0b76544fe9d
-   ```
-
-3. Run the development server:
+2. Run the application:
    ```bash
-   npm run dev
+   docker-compose up
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## API Endpoints
 

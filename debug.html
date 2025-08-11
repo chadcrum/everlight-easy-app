@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug API Test</title>
+</head>
+<body>
+    <h1>API Debug Test</h1>
+    <button onclick="testAPI()">Test API</button>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Loading...';
+            
+            try {
+                console.log('Fetching from /api/sequences...');
+                const response = await fetch('/api/sequences');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data received:', data);
+                console.log('Data length:', data.length);
+                
+                resultsDiv.innerHTML = `
+                    <h2>Success!</h2>
+                    <p>Received ${data.length} sequences</p>
+                    <pre>${JSON.stringify(data.slice(0, 2), null, 2)}</pre>
+                `;
+                
+                // Test grouping
+                const grouped = data.reduce((acc, seq) => {
+                    if (seq.groups && seq.groups.length > 0) {
+                        seq.groups.forEach(group => {
+                            if (!acc[group]) acc[group] = [];
+                            acc[group].push(seq);
+                        });
+                    }
+                    return acc;
+                }, {});
+                
+                console.log('Grouped data:', grouped);
+                console.log('Number of groups:', Object.keys(grouped).length);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `<h2>Error:</h2><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

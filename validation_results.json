@@ -1,0 +1,12 @@
+{
+  "mainPage": false,
+  "sequencesAPI": false,
+  "submitAPI": false,
+  "cyberpunkTheme": false,
+  "sequences": [],
+  "groups": [],
+  "errors": [
+    "Main page: Request timeout",
+    "Sequences API: Request timeout"
+  ]
+}

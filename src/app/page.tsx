@@ -11,6 +11,7 @@ export default function Home() {
   const [selectedSequence, setSelectedSequence] = useState<LightSequence | null>(null);
   const [message, setMessage] = useState<string>('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+  const [turningOff, setTurningOff] = useState(false);
 
   useEffect(() => {
     const fetchSequences = async () => {
@@ -82,6 +83,32 @@ export default function Home() {
     setTimeout(() => setMessage(''), 3000);
   };
 
+  const handleTurnOff = async () => {
+    setTurningOff(true);
+    
+    try {
+      const response = await fetch('/api/turn-off', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setMessage('Lights turned off');
+        setMessageType('success');
+        setSelectedSequence(null);
+      } else {
+        throw new Error('Failed to turn off lights');
+      }
+    } catch (error) {
+      console.error('Error turning off lights:', error);
+      setMessage('Failed to turn off lights');
+      setMessageType('error');
+    } finally {
+      setTurningOff(false);
+    }
+    
+    setTimeout(() => setMessage(''), 3000);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen cyberpunk-grid relative overflow-hidden">
@@ -142,24 +169,40 @@ export default function Home() {
       <div className="relative z-10 min-h-screen p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12 digital-noise">
-            <h1 
-              className="text-6xl font-bold neon-text terminal-brackets glitch cyberpunk-grid mb-6"
-              data-text="EVERLIGHT CONTROL"
-              style={{ fontFamily: 'Orbitron, monospace' }}
-            >
-              EVERLIGHT CONTROL
-            </h1>
-            
-            <div className="text-xl font-mono neon-text text-cyan-400 mb-2">
-              [SYSTEM STATUS: ONLINE]
+          <div className="mb-12 digital-noise">
+            <div className="flex items-center justify-center relative mb-6">
+              <h1 
+                className="text-6xl font-bold neon-text terminal-brackets glitch cyberpunk-grid"
+                data-text="EVERLIGHT CONTROL"
+                style={{ fontFamily: 'Orbitron, monospace' }}
+              >
+                EVERLIGHT CONTROL
+              </h1>
+              
+              {/* Turn Off Button - Right of title */}
+              <button
+                onClick={handleTurnOff}
+                disabled={turningOff}
+                className="ml-8 cyber-card bg-red-900/30 border-red-400 hover:bg-red-800/40 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed px-8 py-4 font-mono text-red-300 hover:text-red-200 neon-text transition-all duration-300 text-lg font-bold"
+                style={{
+                  textShadow: '0 0 10px #ff4444, 0 0 20px #ff4444, 0 0 30px #ff4444'
+                }}
+              >
+                {turningOff ? 'TURNING OFF...' : 'TURN OFF'}
+              </button>
             </div>
             
-            <div className="text-sm font-mono text-cyan-300 opacity-60">
-              {sequences.length} LIGHT SEQUENCES DETECTED | {Object.keys(groupedSequences).length} GROUPS ACTIVE
+            <div className="text-center">
+              <div className="text-xl font-mono neon-text text-cyan-400 mb-2">
+                [SYSTEM STATUS: ONLINE]
+              </div>
+              
+              <div className="text-sm font-mono text-cyan-300 opacity-60">
+                {sequences.length} LIGHT SEQUENCES DETECTED | {Object.keys(groupedSequences).length} GROUPS ACTIVE
+              </div>
+              
+              <div className="scanning-line"></div>
             </div>
-            
-            <div className="scanning-line"></div>
           </div>
 
 

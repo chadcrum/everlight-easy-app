@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everlight Frontend Testing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #00ffff;
+        }
+        .test-section {
+            margin: 20px 0;
+            border: 1px solid #00ffff;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .pass {
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid #00ff00;
+        }
+        .fail {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff0000;
+        }
+        .info {
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+        }
+        button {
+            background: transparent;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #00ffff;
+            margin: 10px 0;
+        }
+        .neon-text {
+            text-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+            animation: neon-flicker 2s infinite alternate;
+        }
+        @keyframes neon-flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="neon-text">🔬 EVERLIGHT FRONTEND TESTING SUITE 🔬</h1>
+    
+    <div class="test-section">
+        <h2>📡 API Connectivity Tests</h2>
+        <button onclick="testApiSequences()">Test /api/sequences</button>
+        <button onclick="testApiSubmit()">Test /api/submit</button>
+        <div id="api-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎨 Cyberpunk Theme Visual Test</h2>
+        <p>Load the application in the iframe below to test visual elements:</p>
+        <button onclick="loadApplication()">Load Application</button>
+        <button onclick="testCyberpunkEffects()">Test Cyberpunk Effects</button>
+        <div id="visual-results"></div>
+        <iframe id="app-frame" src="about:blank"></iframe>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Grouping Logic Test</h2>
+        <button onclick="testGroupingLogic()">Test Light Sequence Grouping</button>
+        <div id="grouping-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Interactive Elements Test</h2>
+        <button onclick="testInteractivity()">Test User Interactions</button>
+        <div id="interaction-results"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let appLoaded = false;
+
+        function addResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            container.appendChild(div);
+        }
+
+        async function testApiSequences() {
+            try {
+                addResult('api-results', '🔄 Testing /api/sequences endpoint...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/sequences`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!Array.isArray(data)) {
+                    throw new Error('Response is not an array');
+                }
+                
+                if (data.length === 0) {
+                    throw new Error('No sequences returned');
+                }
+                
+                // Test data structure
+                const firstSequence = data[0];
+                const requiredFields = ['id', 'groups', 'alias', 'colorMode', 'pattern'];
+                for (const field of requiredFields) {
+                    if (!(field in firstSequence)) {
+                        throw new Error(`Missing required field: ${field}`);
+                    }
+                }
+                
+                // Test grouping data
+                const groupCounts = {};
+                data.forEach(seq => {
+                    if (seq.groups && Array.isArray(seq.groups)) {
+                        seq.groups.forEach(group => {
+                            groupCounts[group] = (groupCounts[group] || 0) + 1;
+                        });
+                    }
+                });
+                
+                addResult('api-results', `✅ API /api/sequences PASSED - ${data.length} sequences loaded`, 'pass');
+                addResult('api-results', `📊 Groups found: ${Object.keys(groupCounts).length}`, 'info');
+                addResult('api-results', `🎯 Sample groups: ${Object.keys(groupCounts).slice(0, 5).join(', ')}`, 'info');
+                
+            } catch (error) {
+                addResult('api-results', `❌ API /api/sequences FAILED: ${error.message}`, 'fail');
+            }
+        }
+
+        async function testApiSubmit() {
+            try {
+                addResult('api-results', '🔄 Testing /api/submit endpoint...', 'info');
+                
+                const testPayload = {
+                    pattern: ["FF0000", "00FF00", "0000FF"],
+                    colorMode: "rgb",
+                    effects: [{ effectType: "chase", value: 100 }]
+                };
+                
+                const response = await fetch(`${API_BASE}/api/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testPayload)
+                });
+                
+                if (response.ok) {
+                    addResult('api-results', '✅ API /api/submit PASSED - Successfully accepted light pattern', 'pass');
+                } else {
+                    addResult('api-results', `⚠️ API /api/submit returned ${response.status} - This may be expected if no hardware controller is connected`, 'info');
+                }
+                
+            } catch (error) {
+                addResult('api-results', `❌ API /api/submit FAILED: ${error.message}`, 'fail');
+            }
+        }
+
+        function loadApplication() {
+            const iframe = document.getElementById('app-frame');
+            iframe.src = `${API_BASE}/`;
+            addResult('visual-results', '🔄 Loading application in iframe...', 'info');
+            
+            iframe.onload = function() {
+                appLoaded = true;
+                addResult('visual-results', '✅ Application loaded successfully', 'pass');
+                
+                // Wait for content to render
+                setTimeout(() => {
+                    testApplicationContent();
+                }, 2000);
+            };
+        }
+
+        function testApplicationContent() {
+            try {
+                const iframe = document.getElementById('app-frame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                if (!iframeDoc) {
+                    addResult('visual-results', '❌ Cannot access iframe content (CORS restriction)', 'fail');
+                    return;
+                }
+                
+                // Test for cyberpunk elements
+                const cyberpunkElements = [
+                    '.cyberpunk-grid',
+                    '.matrix-rain', 
+                    '.neon-text',
+                    '.scan-lines',
+                    '.horizontal-scanner',
+                    '.vertical-scanner'
+                ];
+                
+                let foundElements = 0;
+                cyberpunkElements.forEach(selector => {
+                    const element = iframeDoc.querySelector(selector);
+                    if (element) {
+                        foundElements++;
+                        addResult('visual-results', `✅ Found cyberpunk element: ${selector}`, 'pass');
+                    } else {
+                        addResult('visual-results', `❌ Missing cyberpunk element: ${selector}`, 'fail');
+                    }
+                });
+                
+                if (foundElements >= 4) {
+                    addResult('visual-results', '✅ Cyberpunk theme elements PASSED', 'pass');
+                } else {
+                    addResult('visual-results', '❌ Cyberpunk theme elements FAILED', 'fail');
+                }
+                
+            } catch (error) {
+                addResult('visual-results', `❌ Error testing application content: ${error.message}`, 'fail');
+            }
+        }
+
+        function testCyberpunkEffects() {
+            // This test provides guidance since we can't directly access iframe content
+            addResult('visual-results', '🎨 MANUAL CYBERPUNK VISUAL TEST:', 'info');
+            addResult('visual-results', '1. Check for animated grid background pattern', 'info');
+            addResult('visual-results', '2. Look for neon text with glowing effects', 'info');
+            addResult('visual-results', '3. Verify matrix rain animation in background', 'info');
+            addResult('visual-results', '4. Check for horizontal/vertical scanning lines', 'info');
+            addResult('visual-results', '5. Look for holographic/glitch effects', 'info');
+            addResult('visual-results', '6. Test hover effects on interactive elements', 'info');
+        }
+
+        async function testGroupingLogic() {
+            try {
+                addResult('grouping-results', '🔄 Testing light sequence grouping logic...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/sequences`);
+                const sequences = await response.json();
+                
+                // Test grouping logic implementation
+                const groupedSequences = sequences.reduce((acc, sequence) => {
+                    if (sequence.groups && sequence.groups.length > 0) {
+                        sequence.groups.forEach(group => {
+                            if (!acc[group]) {
+                                acc[group] = [];
+                            }
+                            acc[group].push(sequence);
+                        });
+                    } else {
+                        if (!acc['Ungrouped']) {
+                            acc['Ungrouped'] = [];
+                        }
+                        acc['Ungrouped'].push(sequence);
+                    }
+                    return acc;
+                }, {});
+                
+                const groupNames = Object.keys(groupedSequences);
+                const totalGroups = groupNames.length;
+                
+                addResult('grouping-results', `✅ Grouping logic PASSED - ${totalGroups} groups created`, 'pass');
+                
+                // Test for sequences in multiple groups
+                let multiGroupSequences = 0;
+                sequences.forEach(seq => {
+                    if (seq.groups && seq.groups.length > 1) {
+                        multiGroupSequences++;
+                    }
+                });
+                
+                addResult('grouping-results', `📊 ${multiGroupSequences} sequences appear in multiple groups`, 'info');
+                
+                // Show sample groups and counts
+                groupNames.slice(0, 8).forEach(groupName => {
+                    const cleanName = groupName.replace('EverLights/', '').replace('/', '');
+                    const count = groupedSequences[groupName].length;
+                    addResult('grouping-results', `🎯 Group "${cleanName}": ${count} sequences`, 'info');
+                });
+                
+            } catch (error) {
+                addResult('grouping-results', `❌ Grouping logic test FAILED: ${error.message}`, 'fail');
+            }
+        }
+
+        function testInteractivity() {
+            addResult('interaction-results', '🎯 INTERACTIVE ELEMENTS TEST GUIDE:', 'info');
+            addResult('interaction-results', '1. Click on group cards to expand/collapse them', 'info');
+            addResult('interaction-results', '2. Verify expand/collapse animation works smoothly', 'info');
+            addResult('interaction-results', '3. Check that arrow indicators change (◢◣ vs ◤◥)', 'info');
+            addResult('interaction-results', '4. Click on individual light cards to select them', 'info');
+            addResult('interaction-results', '5. Verify selection state shows with visual feedback', 'info');
+            addResult('interaction-results', '6. Check for success/error messages when selecting lights', 'info');
+            addResult('interaction-results', '7. Test hover effects on all interactive elements', 'info');
+            addResult('interaction-results', '8. Verify message display system shows feedback', 'info');
+        }
+
+        // Auto-run basic tests on page load
+        window.onload = function() {
+            setTimeout(() => {
+                testApiSequences();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

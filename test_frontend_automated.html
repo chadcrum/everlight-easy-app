@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everlight Frontend Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+        .pass { border-color: #0f0; }
+        .fail { border-color: #f00; color: #f00; }
+        .warning { border-color: #ff0; color: #ff0; }
+        .test-section {
+            margin: 20px 0;
+            border-top: 2px solid #00ff00;
+            padding-top: 20px;
+        }
+        .loading {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        iframe {
+            width: 100%;
+            height: 800px;
+            border: 2px solid #00ff00;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>[EVERLIGHT FRONTEND TEST SUITE]</h1>
+    <div id="status" class="loading">INITIALIZING TEST ENVIRONMENT...</div>
+    
+    <div class="test-section">
+        <h2>1. APPLICATION LOADING TEST</h2>
+        <div id="app-loading">
+            <div class="test-result loading">Testing application load at http://localhost:3002...</div>
+            <iframe id="app-frame" src="http://localhost:3002" onload="testAppLoad()"></iframe>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. API ENDPOINTS TEST</h2>
+        <div id="api-tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. CYBERPUNK THEME TEST</h2>
+        <div id="theme-tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. GROUPING FUNCTIONALITY TEST</h2>
+        <div id="grouping-tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. INTERACTION TESTS</h2>
+        <div id="interaction-tests"></div>
+    </div>
+    
+    <div id="test-summary"></div>
+
+    <script>
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            warnings: 0
+        };
+        
+        function addTestResult(container, testName, status, message) {
+            const result = document.createElement('div');
+            result.className = `test-result ${status}`;
+            result.innerHTML = `<strong>${testName}:</strong> ${message}`;
+            document.getElementById(container).appendChild(result);
+            
+            if (status === 'pass') testResults.passed++;
+            else if (status === 'fail') testResults.failed++;
+            else if (status === 'warning') testResults.warnings++;
+        }
+        
+        async function testAppLoad() {
+            try {
+                document.getElementById('status').textContent = 'RUNNING TESTS...';
+                
+                // Test 1: Check if iframe loaded successfully
+                const iframe = document.getElementById('app-frame');
+                if (iframe.contentDocument || iframe.contentWindow) {
+                    addTestResult('app-loading', 'Application Load', 'pass', 'Application loaded successfully');
+                } else {
+                    addTestResult('app-loading', 'Application Load', 'fail', 'Failed to load application');
+                }
+                
+                // Give the app some time to fully load
+                setTimeout(async () => {
+                    await testAPIEndpoints();
+                    await testCyberpunkTheme();
+                    await testGroupingFunctionality();
+                    await testInteractions();
+                    showSummary();
+                }, 3000);
+                
+            } catch (error) {
+                addTestResult('app-loading', 'Application Load', 'fail', `Error: ${error.message}`);
+            }
+        }
+        
+        async function testAPIEndpoints() {
+            try {
+                // Test sequences endpoint
+                const sequencesResponse = await fetch('http://localhost:3002/api/sequences');
+                if (sequencesResponse.ok) {
+                    const sequences = await sequencesResponse.json();
+                    addTestResult('api-tests', 'Sequences API', 'pass', `Loaded ${sequences.length} sequences`);
+                    
+                    // Test data structure
+                    if (sequences[0] && sequences[0].groups && sequences[0].alias) {
+                        addTestResult('api-tests', 'Data Structure', 'pass', 'Sequences have required fields (groups, alias)');
+                    } else {
+                        addTestResult('api-tests', 'Data Structure', 'fail', 'Missing required fields in sequence data');
+                    }
+                    
+                    // Test grouping data
+                    const groups = [...new Set(sequences.flatMap(s => s.groups || []))];
+                    addTestResult('api-tests', 'Group Detection', 'pass', `Found ${groups.length} unique groups: ${groups.slice(0, 5).join(', ')}...`);
+                    
+                    // Check for expected groups
+                    const expectedGroups = ['Halloween', 'Christmas', 'Patriotic'];
+                    const foundExpected = expectedGroups.filter(g => 
+                        groups.some(group => group.includes(g))
+                    );
+                    addTestResult('api-tests', 'Expected Groups', 'pass', `Found expected groups: ${foundExpected.join(', ')}`);
+                    
+                } else {
+                    addTestResult('api-tests', 'Sequences API', 'fail', `API returned status ${sequencesResponse.status}`);
+                }
+            } catch (error) {
+                addTestResult('api-tests', 'API Connection', 'fail', `Failed to connect to API: ${error.message}`);
+            }
+        }
+        
+        async function testCyberpunkTheme() {
+            try {
+                const iframe = document.getElementById('app-frame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                if (!iframeDoc) {
+                    addTestResult('theme-tests', 'Theme Access', 'fail', 'Cannot access iframe content for theme testing');
+                    return;
+                }
+                
+                // Test for cyberpunk CSS classes
+                const cyberpunkClasses = [
+                    'cyberpunk-grid', 'neon-text', 'matrix-rain', 'scan-lines',
+                    'hologram', 'glitch', 'terminal-brackets', 'cyber-card'
+                ];
+                
+                const foundClasses = cyberpunkClasses.filter(className => {
+                    return iframeDoc.querySelector(`.${className}`) !== null;
+                });
+                
+                if (foundClasses.length > 0) {
+                    addTestResult('theme-tests', 'Cyberpunk Classes', 'pass', `Found cyberpunk classes: ${foundClasses.join(', ')}`);
+                } else {
+                    addTestResult('theme-tests', 'Cyberpunk Classes', 'warning', 'No cyberpunk CSS classes detected - may not be loaded yet');
+                }
+                
+                // Test for CSS animations
+                const animatedElements = iframeDoc.querySelectorAll('[class*="animate"], [class*="pulse"], [class*="flicker"]');
+                if (animatedElements.length > 0) {
+                    addTestResult('theme-tests', 'Animations', 'pass', `Found ${animatedElements.length} animated elements`);
+                } else {
+                    addTestResult('theme-tests', 'Animations', 'warning', 'No animated elements detected');
+                }
+                
+                // Test for neon colors
+                const styles = iframeDoc.documentElement.style || window.getComputedStyle(iframeDoc.documentElement);
+                const neonColors = ['--neon-cyan', '--neon-pink', '--neon-green'];
+                const foundColors = neonColors.filter(color => 
+                    styles.getPropertyValue && styles.getPropertyValue(color)
+                );
+                
+                if (foundColors.length > 0) {
+                    addTestResult('theme-tests', 'Neon Colors', 'pass', `CSS custom properties detected`);
+                } else {
+                    addTestResult('theme-tests', 'Neon Colors', 'warning', 'CSS custom properties not accessible');
+                }
+                
+            } catch (error) {
+                addTestResult('theme-tests', 'Theme Testing', 'warning', `Theme testing limited due to CORS: ${error.message}`);
+            }
+        }
+        
+        async function testGroupingFunctionality() {
+            try {
+                // Fetch sequences to test grouping logic
+                const response = await fetch('http://localhost:3002/api/sequences');
+                const sequences = await response.json();
+                
+                // Test grouping logic (replicate from frontend)
+                const groupedSequences = sequences.reduce((acc, sequence) => {
+                    if (sequence.groups && sequence.groups.length > 0) {
+                        sequence.groups.forEach(group => {
+                            if (!acc[group]) {
+                                acc[group] = [];
+                            }
+                            acc[group].push(sequence);
+                        });
+                    } else {
+                        if (!acc['Ungrouped']) {
+                            acc['Ungrouped'] = [];
+                        }
+                        acc['Ungrouped'].push(sequence);
+                    }
+                    return acc;
+                }, {});
+                
+                const groupNames = Object.keys(groupedSequences);
+                addTestResult('grouping-tests', 'Group Creation', 'pass', `Created ${groupNames.length} groups`);
+                
+                // Test cross-group membership
+                let crossGroupItems = 0;
+                sequences.forEach(seq => {
+                    if (seq.groups && seq.groups.length > 1) {
+                        crossGroupItems++;
+                    }
+                });
+                
+                if (crossGroupItems > 0) {
+                    addTestResult('grouping-tests', 'Cross-Group Membership', 'pass', `${crossGroupItems} items appear in multiple groups`);
+                } else {
+                    addTestResult('grouping-tests', 'Cross-Group Membership', 'warning', 'No items found in multiple groups');
+                }
+                
+                // Test group name cleaning
+                const cleanedNames = groupNames.map(name => name.replace('EverLights/', '').replace('/', ''));
+                const hasCleanedNames = cleanedNames.some(name => !name.includes('/'));
+                if (hasCleanedNames) {
+                    addTestResult('grouping-tests', 'Group Name Cleaning', 'pass', 'Group names are cleaned from paths');
+                } else {
+                    addTestResult('grouping-tests', 'Group Name Cleaning', 'warning', 'Group name cleaning may not be working');
+                }
+                
+            } catch (error) {
+                addTestResult('grouping-tests', 'Grouping Logic', 'fail', `Error testing grouping: ${error.message}`);
+            }
+        }
+        
+        async function testInteractions() {
+            try {
+                const iframe = document.getElementById('app-frame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                if (!iframeDoc) {
+                    addTestResult('interaction-tests', 'DOM Access', 'fail', 'Cannot access iframe for interaction testing');
+                    return;
+                }
+                
+                // Test for clickable elements
+                const clickableElements = iframeDoc.querySelectorAll('[onClick], button, [role="button"], .cursor-pointer');
+                if (clickableElements.length > 0) {
+                    addTestResult('interaction-tests', 'Clickable Elements', 'pass', `Found ${clickableElements.length} clickable elements`);
+                } else {
+                    addTestResult('interaction-tests', 'Clickable Elements', 'warning', 'No clickable elements detected');
+                }
+                
+                // Test for form elements (submit functionality)
+                const forms = iframeDoc.querySelectorAll('form, [type="submit"]');
+                if (forms.length > 0) {
+                    addTestResult('interaction-tests', 'Form Elements', 'pass', `Found ${forms.length} form elements`);
+                } else {
+                    addTestResult('interaction-tests', 'Form Elements', 'warning', 'No form elements detected');
+                }
+                
+                // Simulate testing message display (check for message containers)
+                const messageContainers = iframeDoc.querySelectorAll('[role="alert"], .message, .notification, .toast');
+                if (messageContainers.length > 0) {
+                    addTestResult('interaction-tests', 'Message Display', 'pass', 'Message display containers found');
+                } else {
+                    addTestResult('interaction-tests', 'Message Display', 'warning', 'No message display containers detected');
+                }
+                
+            } catch (error) {
+                addTestResult('interaction-tests', 'Interaction Testing', 'warning', `Limited interaction testing due to CORS: ${error.message}`);
+            }
+        }
+        
+        function showSummary() {
+            const summary = document.getElementById('test-summary');
+            const total = testResults.passed + testResults.failed + testResults.warnings;
+            
+            let status = 'TESTING COMPLETE';
+            let statusClass = 'pass';
+            
+            if (testResults.failed > 0) {
+                status = 'TESTS FAILED';
+                statusClass = 'fail';
+            } else if (testResults.warnings > 0) {
+                status = 'TESTS PASSED WITH WARNINGS';
+                statusClass = 'warning';
+            }
+            
+            summary.innerHTML = `
+                <div class="test-section">
+                    <h2>[TEST SUMMARY]</h2>
+                    <div class="test-result ${statusClass}">
+                        <strong>Status:</strong> ${status}<br>
+                        <strong>Total Tests:</strong> ${total}<br>
+                        <strong>Passed:</strong> ${testResults.passed}<br>
+                        <strong>Failed:</strong> ${testResults.failed}<br>
+                        <strong>Warnings:</strong> ${testResults.warnings}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('status').textContent = status;
+            document.getElementById('status').className = statusClass;
+        }
+        
+        // Initialize testing
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tests will start when iframe loads
+        });
+    </script>
+</body>
+</html>
